@@ -2,16 +2,21 @@ package persistence;
 
 import model.site.OwnedSite;
 import model.site.Site;
+import model.site.occupancy.OccupancyStatus;
+import model.site.type.HouseType;
 
-public interface SiteInterface {
+public interface SiteRepository {
     int addSite();
     void updateSite(Site site);
     void updateOwnedSite(OwnedSite site);
     void removeSite(int siteId);
-    void updateOwnershipStatus(int siteId, boolean isOccupied);
+
+    // void updateOwnershipStatus(int siteId, OccupancyStatus status);
+
+    void assignOwnerToSite(int siteId, int ownerId, OccupancyStatus status, HouseType houseType);
+
     int getOccupancyCount(int siteId);
     boolean isMaintenancePaid(int siteId);
     Site getSiteById(int siteId);
-    OwnedSite getOwnedSiteById(int siteId);
     boolean ownerExists(int ownerId);
 }

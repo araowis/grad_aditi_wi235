@@ -1,13 +1,12 @@
 package service.users.login;
 
 import utils.PasswordHashing;
-import service.handlers.*;
-import persistence.AdminInterface;
-import persistence.UserInterface;
+import persistence.UserRepository;
+import service.auth.*;
 
 public class AdminLogin implements LoginHandler {
 
-    public boolean login(String username, String password, UserInterface userInterface) throws Exception {
+    public boolean login(String username, String password, UserRepository userInterface) throws Exception {
         String storedHash = userInterface.fetchHashFromDB(username);
 
         if (storedHash == null) 

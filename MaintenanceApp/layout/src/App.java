@@ -1,10 +1,6 @@
 import service.*;
-import service.factory.*;
-
-import java.sql.Connection;
-
-import persistence.*;
-import persistence.operations.*;
+import context.*;
+import factory.*;
 
 public class App {
 
@@ -16,21 +12,18 @@ public class App {
         }
 
         try {
-            Connection conn = DatabaseConnector.createConnection();
-            
-            MaintenanceInterface maintenanceDao = new MaintenanceDAO(conn);
-            SiteInterface siteDao = new SiteDAO(conn);
-            OwnerInterface ownerDao = new OwnerDAO(conn);
-            AdminInterface adminDao = new AdminDAO(conn);
-
-            AssignmentFactory factory = new AssignmentFactory(maintenanceDao, siteDao, ownerDao, adminDao);
-
-            Service service = factory.createService(args[0]);
+            ServiceFactory factory = ApplicationContext.createServiceFactory();
+            Mode mode = Mode.fromArg(args[0]);
+            Service service = factory.createService(mode);
             service.run();
 
-        } catch (IllegalArgumentException e) {
+        }
+
+        catch (IllegalArgumentException e) {
             System.out.println(e.getMessage());
-        } catch (Exception e) {
+        }
+
+        catch (Exception e) {
             e.printStackTrace();
         }
     }

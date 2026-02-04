@@ -1,15 +1,14 @@
 package service.users;
 
 import service.Service;
-import service.factory.LoginFactory;
-import service.handlers.LoginHandler;
+import factory.LoginFactory;
+import service.auth.LoginHandler;
 import utils.PasswordHashing;
-import persistence.AdminInterface;
-import persistence.MaintenanceInterface;
-import persistence.OwnerInterface;
-import persistence.SiteInterface;
+import persistence.*;
 import model.site.OwnedSite;
 import model.site.Site;
+import model.site.occupancy.OccupancyStatus;
+import model.site.type.HouseType;
 import model.user.Owner;
 
 import java.util.List;
@@ -17,18 +16,21 @@ import java.util.Scanner;
 
 public class AdminService implements Service {
 
-    private final MaintenanceInterface maintenance;
-    private final SiteInterface site;
-    private final AdminInterface admin;
+    private final MaintenanceRepository maintenanceRepo;
+    private final SiteRepository siteRepo;
+    private final AdminRepository adminRepo;
+    private final OwnerRepository ownerRepo;
 
-    public AdminService(MaintenanceInterface maintenance, SiteInterface site, AdminInterface admin) {
-        this.maintenance = maintenance;
-        this.site = site;
-        this.admin = admin;
+    public AdminService(MaintenanceRepository maintenanceRepo, SiteRepository siteRepo, AdminRepository adminRepo,
+            OwnerRepository ownerRepo) {
+        this.maintenanceRepo = maintenanceRepo;
+        this.siteRepo = siteRepo;
+        this.adminRepo = adminRepo;
+        this.ownerRepo = ownerRepo;
     }
 
     @Override
-    public void run() {
+    public void run() throws Exception {
         try (Scanner sc = new Scanner(System.in)) {
             System.out.println("1. Login");
             System.out.println("2. Signup");
@@ -36,74 +38,61 @@ public class AdminService implements Service {
             int option = Integer.parseInt(sc.nextLine());
 
             if (option == 2) {
-                adminSignup(sc);
+                signup(sc);
                 return;
             }
 
             System.out.print("Username: ");
             String username = sc.nextLine();
-
             System.out.print("Password: ");
             String password = sc.nextLine();
 
-            LoginHandler loginHandler = LoginFactory.create("-a");
+            LoginHandler handler = LoginFactory.create("-a");
 
-            if (loginHandler.login(username, password, admin)) {
-                System.out.println("Welcome, Admin " + username);
-                startAdminOperations(sc);
+            if (handler.login(username, password, adminRepo)) {
+                System.out.println("Welcome Admin");
+                adminMenu(sc);
             } else {
-                System.out.println("Admin login failed");
+                System.out.println("Invalid admin credentials");
             }
-        } catch (Exception e) {
-            System.out.println("Error during admin login/signup");
-            e.printStackTrace();
         }
     }
 
-    private void adminSignup(Scanner sc) {
-        try {
-            System.out.println("--- Admin Signup ---");
-            System.out.print("Enter username: ");
-            String username = sc.nextLine();
+    private void signup(Scanner sc) throws Exception {
+        System.out.print("Username: ");
+        String username = sc.nextLine();
+        System.out.print("Password: ");
+        String password = sc.nextLine();
 
-            System.out.print("Enter password: ");
-            String password = sc.nextLine();
+        String hash = PasswordHashing.hashPassword(password);
+        adminRepo.createAdmin(username, hash);
 
-            String hash = PasswordHashing.hashPassword(password);
-
-            admin.saveUserToDB(username, hash);
-
-            System.out.println("Admin account created successfully!");
-        } catch (Exception e) {
-            System.out.println("Error during admin signup");
-            e.printStackTrace();
-        }
+        System.out.println("Admin account created");
     }
 
-    private void startAdminOperations(Scanner sc) {
+    private void adminMenu(Scanner sc) throws Exception {
         boolean running = true;
+
         while (running) {
             printMenu();
             int choice = Integer.parseInt(sc.nextLine());
+
             switch (choice) {
                 case 1 -> addOwner(sc);
                 case 2 -> updateOwner(sc);
                 case 3 -> removeOwner(sc);
-                case 4 -> addSite(sc);
+                case 4 -> addSite();
                 case 5 -> updateSite(sc);
-                case 6 -> updateOwnedSite(sc);
-                case 7 -> removeSite(sc);
-                case 8 -> collectMaintenance(sc); // Owner pays maintenance manually
-                case 9 -> viewPendingSites();
-                case 10 -> approveOrRejectSite(sc);
-                case 11 -> calculateMonthlyMaintenance(); // New: Auto-calc maintenance for all sites
-                case 12 -> approveOwnerPayment(sc); // New: Approve owner maintenance payment
-                case 13 -> viewAllPendingMaintenance(); // New: See all pending payments
+                case 6 -> removeSite(sc);
+                case 7 -> collectMaintenance(sc);
+                case 8 -> approveMaintenance(sc);
+                case 9 -> viewPendingMaintenance();
+                case 10 -> generateMonthlyMaintenance();
+                case 11 -> assignSiteToOwner(sc);
                 case 0 -> running = false;
-                default -> System.out.println("Invalid choice");
+                default -> System.out.println("Invalid option");
             }
         }
-        System.out.println("Admin logged out");
     }
 
     private void printMenu() {
@@ -113,229 +102,201 @@ public class AdminService implements Service {
         System.out.println("2. Update Owner");
         System.out.println("3. Remove Owner");
         System.out.println("4. Add Site");
-        System.out.println("5. Update Site (Open)");
-        System.out.println("6. Update Site (Owned)");
-        System.out.println("7. Remove Site");
-        System.out.println("8. Collect Maintenance");
-        System.out.println("9. View Pending Sites");
-        System.out.println("10. Approve/Reject Site Update");
-        System.out.println("11. Calculate Monthly Maintenance");
-        System.out.println("12. Approve Owner Payment");
-        System.out.println("13. View All Pending Maintenance");
+        System.out.println("5. Update Site");
+        System.out.println("6. Remove Site");
+        System.out.println("7. Collect Maintenance");
+        System.out.println("8. Approve Maintenance Payment");
+        System.out.println("9. View Pending Maintenance");
+        System.out.println("10. Generate Monthly Maintenance");
+        System.out.println("11. Assign Site To Owner");
         System.out.println("0. Logout");
         System.out.println("================================");
     }
 
-    private void addOwner(Scanner sc) {
+    private void addOwner(Scanner sc) throws Exception {
         System.out.print("Owner username: ");
-        String username = sc.nextLine().trim();
-        Owner owner = new Owner();
-        if (username.isEmpty()) {
-            System.out.println("Username cannot be empty");
-            return;
-        }
-        try {
-            String defaultPassword = "changeme"; // default password
-            String hash = PasswordHashing.hashPassword(defaultPassword);
-            admin.saveOwnerUserToDB(username, hash);
-            System.out.println("Owner created successfully. Default password is 'changeme'. Owner must change password on first login.");
-        } catch (Exception e) {
-            System.out.println("Error creating owner");
-            e.printStackTrace();
-        }
+        String username = sc.nextLine();
 
-        admin.addOwner(owner);
-        System.out.println("Owner added");
+        String defaultPassword = "changethisplease";
+        String hash = PasswordHashing.hashPassword(defaultPassword);
+
+        ownerRepo.createOwner(username, hash);
+        System.out.println("Owner created (default password: changethisplease)");
     }
 
     private void updateOwner(Scanner sc) {
-        Owner owner = new Owner();
         System.out.print("Owner ID: ");
-        owner.setOwnerId(Integer.parseInt(sc.nextLine()));
+        int ownerId = Integer.parseInt(sc.nextLine());
 
-        System.out.print("New name: ");
-        owner.setName(sc.nextLine());
+        Owner owner = ownerRepo.getOwnerById(ownerId);
+        if (owner == null) {
+            System.out.println("Owner not found");
+            return;
+        }
 
-        admin.updateOwner(owner);
-        System.out.println("Owner updated");
+        System.out.println("Current name: " + owner.getName());
+        System.out.print("New name [press Enter to keep current]: ");
+        String nameInput = sc.nextLine().trim();
+
+        if (!nameInput.isEmpty()) {
+            owner.setName(nameInput);
+        }
+
+        System.out.println("Maintenance paid: " + owner.isMaintenancePaid());
+        System.out.print("Set maintenance paid? (true/false) [press Enter to keep]: ");
+        String paidInput = sc.nextLine().trim();
+
+        if (!paidInput.isEmpty()) {
+            owner.setMaintenancePaid(Boolean.parseBoolean(paidInput));
+        }
+
+        ownerRepo.updateOwnerDetails(owner);
+        System.out.println("Owner details updated successfully");
     }
 
     private void removeOwner(Scanner sc) {
         System.out.print("Owner ID: ");
-        int id = Integer.parseInt(sc.nextLine());
+        int ownerId = Integer.parseInt(sc.nextLine());
 
-        admin.removeOwner(id);
+        ownerRepo.removeOwner(ownerId);
         System.out.println("Owner removed");
     }
 
-    private void addSite(Scanner sc) {
-        int siteId = site.addSite();
-        if (siteId != -1) {
-            System.out.println("Site added with ID " + siteId);
-        } else {
-            System.out.println("Failed to add site");
-        }
+    private void addSite() {
+        int siteId = siteRepo.addSite();
+        System.out.println("Site created with ID: " + siteId);
     }
 
     private void updateSite(Scanner sc) {
         System.out.print("Site ID: ");
         int siteId = Integer.parseInt(sc.nextLine());
 
-        Site existing = site.getSiteById(siteId);
-        if (existing == null) {
+        Site site = siteRepo.getSiteById(siteId);
+        if (site == null) {
             System.out.println("Site not found");
             return;
         }
 
-        String currentStatus = existing.ownershipStatus ? "y" : "n";
-        System.out.print("New occupancy status (y/n) [" + currentStatus + "]: ");
-        String input = sc.nextLine().trim().toLowerCase();
-        if (!input.isEmpty()) {
-            if (input.equals("y")) {
-                existing.ownershipStatus = true;
-            } else {
-                existing.ownershipStatus = true;
-            }
+        if (!(site instanceof OwnedSite)) {
+            System.out.println("This is an open site.");
+            System.out.println("Dimensions cannot be modified once created.");
+            System.out.println("No updatable fields available.");
+            return;
         }
 
-        System.out.print("New length (feet) [" + existing.getLengthInFeet() + "]: ");
-        String lengthInput = sc.nextLine();
-        if (!lengthInput.isBlank()) {
-            existing.setLength(Integer.parseInt(lengthInput));
+        OwnedSite ownedSite = (OwnedSite) site;
+
+        System.out.println("Current occupancy: " + ownedSite.getOccupancyStatus());
+        System.out.print("New occupancy (OPEN/OCCUPIED): ");
+        String occInput = sc.nextLine().trim();
+
+        if (!occInput.isEmpty()) {
+            ownedSite.setOccupancyStatus(OccupancyStatus.valueOf(occInput.toUpperCase()));
         }
 
-        System.out.print("New breadth (feet) [" + existing.getBreadthInFeet() + "]: ");
-        String breadthInput = sc.nextLine();
-        if (!breadthInput.isBlank()) {
-            existing.setBreadth(Integer.parseInt(breadthInput));
+        System.out.println("Current house type: " + ownedSite.getHouseType());
+        System.out.print("New house type (VILLA/APARTMENT/INDEPENDENT_HOUSE): ");
+        String houseInput = sc.nextLine().trim();
+
+        if (!houseInput.isEmpty()) {
+            ownedSite.setHouseType(HouseType.valueOf(houseInput.toUpperCase()));
         }
 
-        site.updateSite(existing);
-        System.out.println("Site updated");
+        siteRepo.updateOwnedSite(ownedSite);
+        System.out.println("Owned site updated successfully");
     }
 
-    private void updateOwnedSite(Scanner sc) {
+    private void assignSiteToOwner(Scanner sc) {
         System.out.print("Site ID: ");
         int siteId = Integer.parseInt(sc.nextLine());
 
-        Site existingSite = site.getOwnedSiteById(siteId);
-        if (existingSite == null) {
+        Site site = siteRepo.getSiteById(siteId);
+        if (site == null) {
             System.out.println("Site not found");
             return;
         }
 
-        OwnedSite existing;
-        if (existingSite instanceof OwnedSite) {
-            existing = (OwnedSite) existingSite;
-        } else {
-            System.out.println("This site is not owned. Consider updating as an OpenSite instead.");
+        if (site instanceof OwnedSite) {
+            System.out.println("Site is already owned");
             return;
         }
 
-        System.out.print("New length (feet) [" + existing.getLengthInFeet() + "]: ");
-        String lengthInput = sc.nextLine();
-        if (!lengthInput.isBlank()) {
-            existing.setLength(Integer.parseInt(lengthInput));
+        System.out.print("Owner ID: ");
+        int ownerId = Integer.parseInt(sc.nextLine());
+
+        if (!siteRepo.ownerExists(ownerId)) {
+            System.out.println("Owner does not exist");
+            return;
         }
 
-        System.out.print("New breadth (feet) [" + existing.getBreadthInFeet() + "]: ");
-        String breadthInput = sc.nextLine();
-        if (!breadthInput.isBlank()) {
-            existing.setBreadth(Integer.parseInt(breadthInput));
-        }
+        System.out.println("Choose House Type (optional):");
+        System.out.println("1. Villa");
+        System.out.println("2. Apartment");
+        System.out.println("3. Independent House");
+        System.out.print("Press Enter to skip (open site): ");
 
-        System.out.print("New Owner ID [" + existing.getOwnerId() + "]: ");
-        String ownerInput = sc.nextLine();
-        if (!ownerInput.isBlank()) {
-            int newOwnerId = Integer.parseInt(ownerInput);
+        String input = sc.nextLine().trim();
+        HouseType houseType = null;
 
-            // Check that owner exists to avoid foreign key violation
-            if (site.ownerExists(newOwnerId)) {
-                existing.setOwnerId(newOwnerId);
-            } else {
-                System.out.println("Owner ID " + newOwnerId + " does not exist. Owner not updated.");
+        if (!input.isEmpty()) {
+            switch (input) {
+                case "1" -> houseType = HouseType.VILLA;
+                case "2" -> houseType = HouseType.APARTMENT;
+                case "3" -> houseType = HouseType.INDEPENDENT_HOUSE;
+                default -> {
+                    System.out.println("Invalid choice");
+                    return;
+                }
             }
         }
 
-        site.updateOwnedSite(existing);
-        System.out.println("Owned site updated successfully");
+        siteRepo.assignOwnerToSite(
+                siteId,
+                ownerId,
+                OccupancyStatus.OCCUPIED,
+                houseType);
+
+        System.out.println("Site successfully assigned to owner");
     }
 
     private void removeSite(Scanner sc) {
         System.out.print("Site ID: ");
-        int id = Integer.parseInt(sc.nextLine());
+        int siteId = Integer.parseInt(sc.nextLine());
 
-        site.removeSite(id);
+        siteRepo.removeSite(siteId);
         System.out.println("Site removed");
     }
 
-    private void calculateMonthlyMaintenance() {
-        maintenance.calculateMonthlyMaintenance();
-        System.out.println("Monthly maintenance calculated for all sites.");
+    private void generateMonthlyMaintenance() {
+        maintenanceRepo.generateMonthlyMaintenance();
+        System.out.println("Monthly maintenance generated");
     }
 
-    // Admin collects maintenance payment from owner manually
     private void collectMaintenance(Scanner sc) {
         System.out.print("Site ID: ");
         int siteId = Integer.parseInt(sc.nextLine());
 
-        System.out.print("Amount paid by owner: ");
-        double amount = Double.parseDouble(sc.nextLine());
+        System.out.print("Amount paid: ");
+        long amount = Long.parseLong(sc.nextLine());
 
-        maintenance.payMaintenance(siteId, amount);
-        System.out.println("Payment recorded. Waiting for admin approval.");
+        maintenanceRepo.payMaintenance(siteId, amount);
+        System.out.println("Payment recorded (pending approval)");
     }
 
-    // Admin approves an owner's payment
-    private void approveOwnerPayment(Scanner sc) {
-        System.out.print("Site ID to approve payment: ");
-        int siteId = Integer.parseInt(sc.nextLine());
-
-        admin.approvePayment(siteId);
-        System.out.println("Owner payment approved for site " + siteId);
-    }
-
-    // Admin views all pending maintenance payments
-    private void viewAllPendingMaintenance() {
-        var pending = maintenance.getPendingMaintenance();
-        if (pending.isEmpty()) {
-            System.out.println("No pending maintenance payments.");
-            return;
-        }
-        System.out.println("--- Pending Maintenance ---");
-        for (var record : pending) {
-            System.out.printf("Site ID: %d | Amount Due: %d | Month: %s%n",
-                    record.siteId, record.amount, record.month);
-        }
-    }
-
-    private void viewPendingSites() {
-        List<Site> pending = maintenance.getAllPendingSites();
-
-        if (pending.isEmpty()) {
-            System.out.println("No pending sites");
-            return;
-        }
-
-        pending.forEach(
-                site -> System.out.println("Pending Site ID: " + site.getId() + ", Area: " + site.area() + " sq ft"));
-    }
-
-    private void approveOrRejectSite(Scanner sc) {
+    private void approveMaintenance(Scanner sc) {
         System.out.print("Site ID: ");
         int siteId = Integer.parseInt(sc.nextLine());
 
-        System.out.print("Approve (A) / Reject (R): ");
-        String choice = sc.nextLine();
+        maintenanceRepo.approveMaintenancePayment(siteId);
+        System.out.println("Maintenance payment approved");
+    }
 
-        if (choice.equalsIgnoreCase("A")) {
-            maintenance.approveSiteUpdate(siteId);
-            System.out.println("Site approved");
-        } else {
-            System.out.print("Rejection reason: ");
-            String reason = sc.nextLine();
-            maintenance.rejectSiteUpdate(siteId, reason);
-            System.out.println("Site rejected");
+    private void viewPendingMaintenance() {
+        List<?> pending = maintenanceRepo.getPendingMaintenance();
+        if (pending.isEmpty()) {
+            System.out.println("No pending maintenance");
+            return;
         }
+        pending.forEach(System.out::println);
     }
 }

@@ -1,5 +1,7 @@
 package model.site;
 
+import model.site.occupancy.OccupancyStatus;
+
 public class SiteFactory {
 
     private static final int FIRST_SITES_MAX  = 10; 
@@ -38,8 +40,9 @@ public class SiteFactory {
         return new Site(length, breadth);
     }
 
-    public OpenSite createTemporaryOwnedSite(int length, int breadth, int ownerId) {
-        return new OpenSite(length, breadth, ownerId);
+    public OwnedSite createTemporaryOwnedSite(int length, int breadth, int ownerId, boolean occupied) {
+        OwnedSite site = new OwnedSite(length, breadth, ownerId, (occupied ? OccupancyStatus.OCCUPIED : OccupancyStatus.OPEN));
+        return site;
     }
 
     public synchronized int getCreatedCount() {

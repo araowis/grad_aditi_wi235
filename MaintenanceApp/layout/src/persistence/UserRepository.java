@@ -1,5 +1,5 @@
 package persistence;
 
-public interface UserInterface {
+public interface UserRepository {
     String fetchHashFromDB(String username);
 }

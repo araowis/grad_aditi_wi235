@@ -1,68 +1,69 @@
 package persistence.operations;
 
-import persistence.MaintenanceInterface;
-import model.site.*;
-import model.user.Owner;
-
+import persistence.MaintenanceRepository;
+import model.site.occupancy.OccupancyStatus;
 import java.sql.*;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import persistence.dto.*;;
 
-public class MaintenanceDAO implements MaintenanceInterface {
+public class MaintenanceDAO implements MaintenanceRepository {
 
     private final Connection conn;
-    private final SiteFactory siteFactory;
 
     public MaintenanceDAO(Connection conn) {
         this.conn = conn;
-        this.siteFactory = SiteFactory.getInstance();
     }
 
-    public void calculateMonthlyMaintenance() {
-        // Only fetch occupied sites and their dimensions
-        String sqlSites = """
-                    SELECT s.site_number, s.length_in_feet, s.breadth_in_feet, o.occupied_site_type, o.owner_id
-                    FROM SITE s
-                    JOIN OCCUPIED_SITE o ON s.site_number = o.site_number
-                """;
+    @Override
+    public void generateMonthlyMaintenance() {
+        String currentMonth = LocalDate.now().getMonth().name().substring(0, 3);
+        String sqlSites = "SELECT site_number, length_in_feet, breadth_in_feet, ownership_status FROM SITE WHERE owner_id IS NOT NULL";
 
-        try (PreparedStatement ps = conn.prepareStatement(sqlSites)) {
-            ResultSet rs = ps.executeQuery();
+        try (PreparedStatement ps = conn.prepareStatement(sqlSites);
+                ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 int siteId = rs.getInt("site_number");
                 int length = rs.getInt("length_in_feet");
                 int breadth = rs.getInt("breadth_in_feet");
-                String typeStr = rs.getString("occupied_site_type");
-                int ownerId = rs.getInt("owner_id");
+                boolean ownershipStatus = rs.getBoolean("ownership_status");
 
-                // Create OccupiedSite object
-                OccupiedSite site = new OccupiedSite(length, breadth, ownerId);
-                site.setOccupiedSiteType(typeStr);
+                OccupancyStatus status = ownershipStatus
+                        ? OccupancyStatus.OCCUPIED
+                        : OccupancyStatus.OPEN;
 
-                long maintenanceAmount = site.getMaintenancePrice(); // 9 per sqft
-
-                // Insert maintenance record for this month
-                String sqlInsert = """
-                            INSERT INTO MAINTENANCE(site_number, maintenance_amount, maintenance_month)
-                            VALUES (?, ?, ?)
-                        """;
-                try (PreparedStatement psInsert = conn.prepareStatement(sqlInsert)) {
-                    psInsert.setInt(1, siteId);
-                    psInsert.setLong(2, maintenanceAmount);
-                    psInsert.setString(3, java.time.LocalDate.now().getMonth().name().substring(0, 3));
-                    psInsert.executeUpdate();
-                }
+                long amount = status.calculateMaintenance(length * breadth);
+                insertMaintenance(siteId, amount, currentMonth);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public void payMaintenance(int siteId, double amount) {
-        String sql = "UPDATE MAINTENANCE SET maintenance_amount = maintenance_amount - ? WHERE site_number = ? AND maintenance_month = ?";
+    private void insertMaintenance(int siteId, long amount, String month) throws SQLException {
+        String sqlInsert = "INSERT INTO MAINTENANCE(site_number, maintenance_amount, maintenance_month) VALUES (?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
+            ps.setInt(1, siteId);
+            ps.setLong(2, amount);
+            ps.setString(3, month);
+            ps.executeUpdate();
+        }
+    }
+
+    @Override
+    public void payMaintenance(int siteId, long amount) {
+        String sql = """
+                    UPDATE MAINTENANCE
+                    SET maintenance_amount =
+                        GREATEST(maintenance_amount - ?, 0)
+                    WHERE site_number = ?
+                      AND maintenance_month = ?
+                """;
+
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, (long) amount);
+            ps.setLong(1, amount);
             ps.setInt(2, siteId);
             ps.setString(3, LocalDate.now().getMonth().name().substring(0, 3));
             ps.executeUpdate();
@@ -71,35 +72,23 @@ public class MaintenanceDAO implements MaintenanceInterface {
         }
     }
 
-    public long getTotalMaintenanceDue(int ownerId) {
-        String sql = """
-                SELECT SUM(m.maintenance_amount) AS total_due
-                FROM MAINTENANCE m
-                JOIN SITE s ON s.site_number = m.site_number
-                WHERE s.owner_id = ?
-                """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, ownerId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getLong("total_due");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-
+    @Override
     public List<MaintenanceRecord> getPendingMaintenance() {
         List<MaintenanceRecord> pending = new ArrayList<>();
-        String sql = "SELECT * FROM MAINTENANCE WHERE maintenance_amount > 0";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ResultSet rs = ps.executeQuery();
+        String sql = """
+                    SELECT site_number, maintenance_amount, maintenance_month
+                    FROM MAINTENANCE
+                    WHERE maintenance_amount > 0
+                """;
+
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
-                int siteId = rs.getInt("site_number");
-                long amount = rs.getLong("maintenance_amount");
-                String month = rs.getString("maintenance_month");
-                pending.add(new MaintenanceRecord(siteId, amount, month));
+                pending.add(new MaintenanceRecord(
+                        rs.getInt("site_number"),
+                        rs.getLong("maintenance_amount"),
+                        rs.getString("maintenance_month")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -108,32 +97,22 @@ public class MaintenanceDAO implements MaintenanceInterface {
     }
 
     @Override
-    public void approveSiteUpdate(int siteId) {
-        String sql = "UPDATE SITE SET ownership_status=true WHERE site_number=?";
+    public List<MaintenanceRecord> getPendingMaintenanceBySite(int siteId) {
+        List<MaintenanceRecord> pending = new ArrayList<>();
+        String sql = """
+                SELECT maintenance_amount, maintenance_month FROM MAINTENANCE
+                WHERE site_number = ? AND maintenance_amount > 0
+                """;
+
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, siteId);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void rejectSiteUpdate(int siteId, String reason) {
-        System.out.println("Rejected site " + siteId + " for reason: " + reason);
-    }
-
-    @Override
-    public List<Site> getAllPendingSites() {
-        List<Site> pending = new ArrayList<>();
-        String sql = "SELECT * FROM SITE WHERE ownership_status=false";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ResultSet rs = ps.executeQuery();
+
             while (rs.next()) {
-                Site site = siteFactory.createTemporarySite(rs.getInt("length_in_feet"), rs.getInt("breadth_in_feet"));
-                site.setId(rs.getInt("site_number"));
-                site.setOccupied(rs.getBoolean("ownership_status"));
-                pending.add(site);
+                pending.add(new MaintenanceRecord(
+                        siteId,
+                        rs.getLong("maintenance_amount"),
+                        rs.getString("maintenance_month")));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -142,37 +121,48 @@ public class MaintenanceDAO implements MaintenanceInterface {
     }
 
     @Override
-    public Site getPendingSiteById(int siteId) {
-        String sql = "SELECT * FROM SITE WHERE site_number=? AND ownership_status=false";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, siteId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                // Create site via factory
-                Site site = siteFactory.createTemporarySite(rs.getInt("length_in_feet"), rs.getInt("breadth_in_feet"));
-                site.setId(rs.getInt("site_number"));
-                site.setOccupied(rs.getBoolean("ownership_status"));
-                site.setLength(rs.getInt("length_in_feet"));
-                site.setBreadth(rs.getInt("breadth_in_feet"));
-                return site;
+    public void approveMaintenancePayment(int siteId) {
+
+        String updateOwner = """
+                    UPDATE OWNER_USER
+                    SET maintenance_paid = true
+                    WHERE owner_id = (
+                        SELECT owner_id FROM SITE WHERE site_number = ?
+                    )
+                """;
+
+        String clearMaintenance = """
+                    UPDATE MAINTENANCE
+                    SET maintenance_amount = 0
+                    WHERE site_number = ?
+                      AND maintenance_month = ?
+                """;
+
+        try {
+            conn.setAutoCommit(false);
+            try (PreparedStatement psOwner = conn.prepareStatement(updateOwner);
+                    PreparedStatement psMaint = conn.prepareStatement(clearMaintenance)) {
+                psOwner.setInt(1, siteId);
+                psOwner.executeUpdate();
+                psMaint.setInt(1, siteId);
+                psMaint.setString(2, java.time.LocalDate.now().getMonth().name().substring(0, 3));
+                psMaint.executeUpdate();
+                conn.commit();
             }
+
         } catch (SQLException e) {
+            try {
+                conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
             e.printStackTrace();
-        }
-        return null;
-    }
-
-    // Inner class to represent maintenance records
-    public static class MaintenanceRecord {
-        public final int siteId;
-        public final long amount;
-        public final String month;
-
-        public MaintenanceRecord(int siteId, long amount, String month) {
-            this.siteId = siteId;
-            this.amount = amount;
-            this.month = month;
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
-
 }

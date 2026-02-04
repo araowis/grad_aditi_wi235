@@ -1,6 +1,6 @@
-package service.factory;
+package factory;
 
-import service.handlers.*;
+import service.auth.*;
 import service.users.login.*;
 
 public class LoginFactory {

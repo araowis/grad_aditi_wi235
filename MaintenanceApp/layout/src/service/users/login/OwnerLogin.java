@@ -1,12 +1,12 @@
 package service.users.login;
 
-import persistence.UserInterface;
-import service.handlers.LoginHandler;
+import persistence.UserRepository;
+import service.auth.LoginHandler;
 import utils.PasswordHashing;
 
 public class OwnerLogin implements LoginHandler {
 
-    public boolean login(String username, String password, UserInterface userInterface) throws Exception {
+    public boolean login(String username, String password, UserRepository userInterface) throws Exception {
         String storedHash = userInterface.fetchHashFromDB(username);
 
         if (storedHash == null) 
@@ -15,10 +15,6 @@ public class OwnerLogin implements LoginHandler {
         boolean ok = PasswordHashing.verifyPassword(password, storedHash);
         System.out.println((ok)?"Owner logged in":"Invalid owner credentials");
         return ok;
-    }
-
-    private String fetchHashFromDB(String username) {
-        return null;
     }
 }
 

@@ -1,5 +1,5 @@
 package service;
 
 public interface Service {
-    void run();
+    void run() throws Exception;
 }

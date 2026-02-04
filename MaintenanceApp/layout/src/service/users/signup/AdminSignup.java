@@ -1,6 +1,6 @@
 package service.users.signup;
 
-import service.handlers.SignupHandler;
+import service.auth.SignupHandler;
 import utils.PasswordHashing;
 
 public class AdminSignup implements SignupHandler {
