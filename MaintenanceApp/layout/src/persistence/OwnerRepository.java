@@ -2,6 +2,7 @@ package persistence;
 
 import model.site.*;
 import model.user.*;
+import java.util.List;
 
 public interface OwnerRepository extends UserRepository {
     void createOwner(String username, String passwordHash);
@@ -15,5 +16,6 @@ public interface OwnerRepository extends UserRepository {
 
     OwnedSite getOwnedSiteByOwnerId(int ownerId);
     void requestSiteUpdate(Site site);
+    List<Owner> getAllOwners();
     
 }

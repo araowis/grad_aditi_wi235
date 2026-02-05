@@ -5,6 +5,8 @@ import model.site.occupancy.OccupancyStatus;
 import model.site.type.HouseType;
 import persistence.SiteRepository;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SiteDAO implements SiteRepository {
 
@@ -158,6 +160,26 @@ public class SiteDAO implements SiteRepository {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public List<Site> getAllSites() {
+        String sql = "SELECT * FROM SITE";
+        List<Site> sites = new ArrayList<>();
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql);) {
+            while(rs.next()) {
+                OwnedSite site = siteFactory.createTemporaryOwnedSite(
+                    rs.getInt("length_in_feet"), 
+                    rs.getInt("breadth_in_feet"), 
+                    rs.getInt("owner_id"), 
+                    rs.getBoolean("ownership_status"));
+                site.setId(rs.getInt("site_number"));
+                site.setHouseType(HouseType.fromString(rs.getString("house_type")));
+                sites.add(site);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return sites;
     }
 
     @Override

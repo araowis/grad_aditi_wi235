@@ -11,8 +11,11 @@ import model.site.occupancy.OccupancyStatus;
 import model.site.type.HouseType;
 import model.user.Owner;
 
+import java.sql.Date;
 import java.util.List;
 import java.util.Scanner;
+
+import utils.DateInput;
 
 public class AdminService implements Service {
 
@@ -89,6 +92,8 @@ public class AdminService implements Service {
                 case 9 -> viewPendingMaintenance();
                 case 10 -> generateMonthlyMaintenance();
                 case 11 -> assignSiteToOwner(sc);
+                case 12 -> viewAllSites();
+                case 13 -> viewAllOwners();
                 case 0 -> running = false;
                 default -> System.out.println("Invalid option");
             }
@@ -109,6 +114,8 @@ public class AdminService implements Service {
         System.out.println("9. View Pending Maintenance");
         System.out.println("10. Generate Monthly Maintenance");
         System.out.println("11. Assign Site To Owner");
+        System.out.println("12. View All Sites");
+        System.out.println("13. View All Owners");
         System.out.println("0. Logout");
         System.out.println("================================");
     }
@@ -250,11 +257,7 @@ public class AdminService implements Service {
             }
         }
 
-        siteRepo.assignOwnerToSite(
-                siteId,
-                ownerId,
-                OccupancyStatus.OCCUPIED,
-                houseType);
+        siteRepo.assignOwnerToSite(siteId, ownerId, OccupancyStatus.OCCUPIED, houseType);
 
         System.out.println("Site successfully assigned to owner");
     }
@@ -279,7 +282,11 @@ public class AdminService implements Service {
         System.out.print("Amount paid: ");
         long amount = Long.parseLong(sc.nextLine());
 
-        maintenanceRepo.payMaintenance(siteId, amount);
+        System.out.print("Enter date of payment in DD-MM-YYYY format: ");
+        String dateInput = sc.nextLine().trim();
+        Date paymentDate = DateInput.parseDate(dateInput);
+
+        maintenanceRepo.payMaintenance(siteId, amount, paymentDate);
         System.out.println("Payment recorded (pending approval)");
     }
 
@@ -297,6 +304,56 @@ public class AdminService implements Service {
             System.out.println("No pending maintenance");
             return;
         }
-        pending.forEach(System.out::println);
+        pending.forEach(System.out::println); 
+    }
+
+    private void viewAllSites() {
+        List<Site> sites = siteRepo.getAllSites();
+        if (sites == null || sites.isEmpty()) {
+            System.out.println("No sites available");
+            return;
+        }
+        String fmt = "%-8s %-8s %-9s %-8s %-10s %-8s %-12s %-18s %-15s%n";
+        System.out.printf(fmt, "SiteID", "Length", "Breadth", "Area", "Ownership", "OwnerID", "Occupancy", "HouseType", "MaintPaid");
+        System.out.println("---------------------------------------------------------------------------------------------");
+
+        for (Site s : sites) {
+            String ownership = "OPEN";
+            String ownerId = "-";
+            String occupancy = "-";
+            String houseType = "-";
+            String maintPaid = "-";
+
+            if (s instanceof OwnedSite) {
+                OwnedSite os = (OwnedSite) s;
+                ownership = "OWNED";
+                ownerId = String.valueOf(os.getOwnerId());
+                occupancy = String.valueOf(os.getOccupancyStatus());
+                houseType = os.getHouseType() != null ? String.valueOf(os.getHouseType()) : "-";
+                maintPaid = String.valueOf(os.isMaintenancePaid());
+            }
+
+            System.out.printf(fmt, s.getId(), s.getLengthInFeet() + "ft", s.getBreadthInFeet() + "ft", s.area() + "sqft",
+                    ownership,
+                    ownerId,
+                    occupancy,
+                    houseType,
+                    maintPaid);
+        }
+    }
+
+    private void viewAllOwners() {
+        List<Owner> owners = ownerRepo.getAllOwners();
+        if (owners == null || owners.isEmpty()) {
+            System.out.println("No owners available");
+            return;
+        }
+        String fmt = "%-8s %-8s %-25s %-15s%n";
+        System.out.printf(fmt, "OwnerID", "UserID", "Name", "MaintPaid");
+        System.out.println("-------------------------------------------------------------");
+
+        for (Owner o : owners) {
+            System.out.printf(fmt, o.getOwnerId(), o.getId(), o.getName(), String.valueOf(o.isMaintenancePaid()));
+        }
     }
 }

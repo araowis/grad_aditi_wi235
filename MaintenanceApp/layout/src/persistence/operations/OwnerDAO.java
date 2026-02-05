@@ -7,6 +7,8 @@ import model.user.Role;
 import persistence.OwnerRepository;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OwnerDAO implements OwnerRepository {
 
@@ -195,6 +197,20 @@ public class OwnerDAO implements OwnerRepository {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public List<Owner> getAllOwners() {
+        String sql = "SELECT o.owner_id, u.user_id, u.user_name, o.maintenance_paid FROM OWNER_USER o JOIN USERS u ON o.user_id = u.user_id";
+        List<Owner> owners = new ArrayList<>();
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                owners.add(mapOwner(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return owners;
     }
 
     private Owner mapOwner(ResultSet rs) throws SQLException {

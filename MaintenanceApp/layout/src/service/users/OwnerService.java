@@ -3,8 +3,10 @@ package service.users;
 import service.Service;
 import factory.LoginFactory;
 import service.auth.LoginHandler;
+import utils.DateInput;
 import utils.PasswordHashing;
 
+import java.sql.Date;
 import java.util.Scanner;
 
 import model.site.OwnedSite;
@@ -188,8 +190,17 @@ public class OwnerService implements Service {
             return;
         }
 
+        if (site.isMaintenancePaid()) {
+            System.out.println("No pending maintenance for your site");
+            return;
+        }
+
         int amount = site.calculateMaintenanceAmount();
         System.out.println("Maintenance due: INR " + amount);
+
+        System.out.print("Enter date of payment in DD-MM-YYYY format: ");
+        String dateInput = sc.nextLine().trim();
+        Date paymentDate = DateInput.parseDate(dateInput);
 
         System.out.print("Confirm payment (y/n): ");
         if (!sc.nextLine().equalsIgnoreCase("y")) {
@@ -197,7 +208,7 @@ public class OwnerService implements Service {
             return;
         }
 
-        maintenanceRepo.payMaintenance(site.getId(), amount);
+        maintenanceRepo.payMaintenance(site.getId(), amount, paymentDate);
         System.out.println("Payment submitted. Awaiting admin approval");
     }
 }

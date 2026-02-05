@@ -1,5 +1,7 @@
 package persistence;
 
+import java.util.List;
+
 import model.site.OwnedSite;
 import model.site.Site;
 import model.site.occupancy.OccupancyStatus;
@@ -12,6 +14,7 @@ public interface SiteRepository {
     void removeSite(int siteId);
 
     // void updateOwnershipStatus(int siteId, OccupancyStatus status);
+    public List<Site> getAllSites();
 
     void assignOwnerToSite(int siteId, int ownerId, OccupancyStatus status, HouseType houseType);
 
