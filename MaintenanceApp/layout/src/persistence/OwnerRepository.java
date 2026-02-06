@@ -14,7 +14,7 @@ public interface OwnerRepository extends UserRepository {
     
     void updatePassword(String username, String newHash);
 
-    OwnedSite getOwnedSiteByOwnerId(int ownerId);
+    List<OwnedSite> getOwnedSiteByOwnerId(int ownerId);
     void requestSiteUpdate(Site site);
     List<Owner> getAllOwners();
     

@@ -7,6 +7,7 @@ import utils.DateInput;
 import utils.PasswordHashing;
 
 import java.sql.Date;
+import java.util.List;
 import java.util.Scanner;
 
 import model.site.OwnedSite;
@@ -41,7 +42,6 @@ public class OwnerService implements Service {
             e.printStackTrace();
         }
     }
-
 
     private boolean login(Scanner sc) throws Exception {
         System.out.print("Username: ");
@@ -137,78 +137,83 @@ public class OwnerService implements Service {
     }
 
     private void viewMySite() {
-        OwnedSite site = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
+        List<OwnedSite> ownedSites = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
 
-        if (site == null) {
+        if (ownedSites == null) {
             System.out.println("No site assigned to you");
             return;
         }
 
-        System.out.println("----- My Site -----");
-        System.out.println("Site ID: " + site.getId());
-        System.out.println("Area: " + site.area() + " sq ft");
-        System.out.println("Occupancy: " + site.getOccupancyStatus());
-        System.out.println("House Type: " + site.getHouseType());
-        System.out.println("Maintenance Paid: " + site.isMaintenancePaid());
+        ownedSites.forEach((site) -> {
+            System.out.println("----- My Site -----");
+            System.out.println("Site ID: " + site.getId());
+            System.out.println("Area: " + site.area() + " sq ft");
+            System.out.println("Occupancy: " + site.getOccupancyStatus());
+            System.out.println("House Type: " + site.getHouseType());
+            System.out.println("Maintenance Paid: " + site.isMaintenancePaid());
+        });
     }
 
     private void requestSiteUpdate(Scanner sc) {
-        OwnedSite site = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
+        List<OwnedSite> ownedSites = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
 
-        if (site == null) {
+        if (ownedSites == null) {
             System.out.println("No site assigned to you");
             return;
         }
 
-        System.out.println("Current occupancy: " + site.getOccupancyStatus());
-        System.out.print("New occupancy (OPEN/OCCUPIED): ");
-        String occ = sc.nextLine().trim();
+        // lambda function to print and update each site the owner may own
+        ownedSites.forEach((site) -> {
+            System.out.println("Current occupancy: " + site.getOccupancyStatus());
+            System.out.print("New occupancy (OPEN/OCCUPIED): ");
+            String occ = sc.nextLine().trim();
 
-        if (!occ.isEmpty()) {
-            site.setOccupancyStatus(OccupancyStatus.valueOf(occ.toUpperCase()));
-        }
+            if (!occ.isEmpty()) {
+                site.setOccupancyStatus(OccupancyStatus.valueOf(occ.toUpperCase()));
+            }
 
-        System.out.println("Current house type: " + site.getHouseType());
-        System.out.print("New house type (VILLA/APARTMENT/INDEPENDENT_HOUSE): ");
-        String house = sc.nextLine().trim();
+            System.out.println("Current house type: " + site.getHouseType());
+            System.out.print("New house type (VILLA/APARTMENT/INDEPENDENT_HOUSE): ");
+            String house = sc.nextLine().trim();
 
-        if (!house.isEmpty()) {
-            site.setHouseType(
-                    HouseType.valueOf(house.toUpperCase())
-            );
-        }
+            if (!house.isEmpty()) {
+                site.setHouseType(
+                        HouseType.valueOf(house.toUpperCase()));
+            }
 
-        ownerRepo.requestSiteUpdate(site);
-        System.out.println("Update request sent to admin for approval");
+            ownerRepo.requestSiteUpdate(site);
+            System.out.println("Update request sent to admin for approval");
+        });
     }
 
     private void payMaintenance(Scanner sc) {
-        OwnedSite site = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
+        List<OwnedSite> ownedSites = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
+        ownedSites.forEach((site) -> {
+            if (site == null) {
+                System.out.println("No site assigned to you");
+                return;
+            }
 
-        if (site == null) {
-            System.out.println("No site assigned to you");
-            return;
-        }
+            if (site.isMaintenancePaid()) {
+                System.out.println("No pending maintenance for your site");
+                return;
+            }
 
-        if (site.isMaintenancePaid()) {
-            System.out.println("No pending maintenance for your site");
-            return;
-        }
+            int amount = site.calculateMaintenanceAmount();
+            System.out.println("Maintenance due: INR " + amount);
 
-        int amount = site.calculateMaintenanceAmount();
-        System.out.println("Maintenance due: INR " + amount);
+            System.out.print("Enter date of payment in DD-MM-YYYY format: ");
+            String dateInput = sc.nextLine().trim();
+            Date paymentDate = DateInput.parseDate(dateInput);
 
-        System.out.print("Enter date of payment in DD-MM-YYYY format: ");
-        String dateInput = sc.nextLine().trim();
-        Date paymentDate = DateInput.parseDate(dateInput);
+            System.out.print("Confirm payment (y/n): ");
+            if (!sc.nextLine().equalsIgnoreCase("y")) {
+                System.out.println("Payment cancelled");
+                return;
+            }
 
-        System.out.print("Confirm payment (y/n): ");
-        if (!sc.nextLine().equalsIgnoreCase("y")) {
-            System.out.println("Payment cancelled");
-            return;
-        }
-
-        maintenanceRepo.payMaintenance(site.getId(), amount, paymentDate);
-        System.out.println("Payment submitted. Awaiting admin approval");
+            maintenanceRepo.payMaintenance(site.getId(), amount, paymentDate);
+            System.out.println("Payment submitted. Awaiting admin approval");
+        });
     }
 }

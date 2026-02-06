@@ -2,6 +2,7 @@ package persistence.operations;
 
 import model.site.*;
 import model.site.occupancy.OccupancyStatus;
+import model.site.type.HouseType;
 import model.user.Owner;
 import model.user.Role;
 import persistence.OwnerRepository;
@@ -161,9 +162,10 @@ public class OwnerDAO implements OwnerRepository {
     }
 
     @Override
-    public OwnedSite getOwnedSiteByOwnerId(int ownerId) {
+    public List<OwnedSite> getOwnedSiteByOwnerId(int ownerId) {
 
         String sql = "SELECT * FROM SITE WHERE owner_id=?";
+        List<OwnedSite> ownedSites = new ArrayList<>();
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, ownerId);
@@ -172,9 +174,10 @@ public class OwnerDAO implements OwnerRepository {
             if (rs.next()) {
                 OwnedSite site = siteFactory.createTemporaryOwnedSite(rs.getInt("length_in_feet"), rs.getInt("breadth_in_feet"), ownerId, rs.getBoolean("ownership_status"));
                 site.setId(rs.getInt("site_number"));
-                return site;
+                site.setHouseType(HouseType.fromString(rs.getString("house_type")));
+                ownedSites.add(site);
             }
-
+            return ownedSites;
         } catch (SQLException e) {
             e.printStackTrace();
         }
