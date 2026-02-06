@@ -50,12 +50,17 @@ public class MaintenanceDAO implements MaintenanceRepository {
 
     private void insertMaintenance(int siteId, long amount, String month) throws SQLException {
 
-        String sql = "INSERT INTO MAINTENANCE (site_number, maintenance_amount, maintenance_month, payment_made) VALUES (?, ?, ?, false)";
+        String maintenanceSql = "INSERT INTO MAINTENANCE (site_number, maintenance_amount, maintenance_month, payment_made) VALUES (?, ?, ?, false)";
+        String siteSql = "UPDATE SITE SET maintenance_paid = false WHERE site_number = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(maintenanceSql)) {
             ps.setInt(1, siteId);
             ps.setLong(2, amount);
             ps.setString(3, month);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn.prepareStatement(siteSql)) {
+            ps.setInt(1, siteId);
             ps.executeUpdate();
         }
     }
@@ -117,37 +122,6 @@ public class MaintenanceDAO implements MaintenanceRepository {
     }
 
     @Override
-    public List<MaintenanceRecord> getPendingMaintenanceBySite(int siteId) {
-
-        List<MaintenanceRecord> pending = new ArrayList<>();
-
-        String sql = """
-                    SELECT maintenance_amount, maintenance_month
-                    FROM MAINTENANCE
-                    WHERE site_number = ?
-                      AND payment_made = false
-                """;
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, siteId);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                pending.add(new MaintenanceRecord(
-                        siteId,
-                        rs.getLong("maintenance_amount"),
-                        rs.getString("maintenance_month")));
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return pending;
-    }
-
-    @Override
     public void approveMaintenancePayment(int siteId) {
 
         String updateMaintenance = """
@@ -156,22 +130,20 @@ public class MaintenanceDAO implements MaintenanceRepository {
         WHERE site_number = ? AND maintenance_month = ?
         """;
 
-        String updateOwner = """
-        UPDATE OWNER_USER
+        String updateSite = """
+        UPDATE SITE
         SET maintenance_paid = true
-        WHERE owner_id = ( SELECT owner_id FROM SITE WHERE site_number = ?)
+        WHERE owner_id = ?
         """;
 
         try {
             conn.setAutoCommit(false);
 
-            try (PreparedStatement psMaint = conn.prepareStatement(updateMaintenance);
-                    PreparedStatement psOwner = conn.prepareStatement(updateOwner)) {
+            try (PreparedStatement psMaint = conn.prepareStatement(updateMaintenance); PreparedStatement psOwner = conn.prepareStatement(updateSite)) {
 
                 psMaint.setDate(1, Date.valueOf(LocalDate.now()));
                 psMaint.setInt(2, siteId);
-                psMaint.setString(3,
-                        LocalDate.now().getMonth().name().substring(0, 3));
+                psMaint.setString(3, LocalDate.now().getMonth().name().substring(0, 3));
                 psMaint.executeUpdate();
 
                 psOwner.setInt(1, siteId);

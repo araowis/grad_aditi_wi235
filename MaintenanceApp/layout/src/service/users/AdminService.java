@@ -326,8 +326,8 @@ public class AdminService implements Service {
 
             if (s instanceof OwnedSite) {
                 OwnedSite os = (OwnedSite) s;
-                ownership = "OWNED";
-                ownerId = String.valueOf(os.getOwnerId());
+                ownership = os.getOwnerId() == 0 ? "OPEN" : "OWNED";
+                ownerId = String.valueOf(os.getOwnerId() == 0 ? "-" : os.getOwnerId());
                 occupancy = String.valueOf(os.getOccupancyStatus());
                 houseType = os.getHouseType() != null ? String.valueOf(os.getHouseType()) : "-";
                 maintPaid = String.valueOf(os.isMaintenancePaid());

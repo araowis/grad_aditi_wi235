@@ -3,7 +3,7 @@ package model.site.type;
 public enum HouseType {
     VILLA("Villa"),
     APARTMENT("Apartment"),
-    INDEPENDENT_HOUSE("Independent House");
+    INDEPENDENT_HOUSE("Independent_House");
 
     private final String displayName;
 
@@ -17,7 +17,10 @@ public enum HouseType {
     }
 
     public static HouseType fromString(String type) {
-        for (HouseType ht : values()) {
+        if (type == null || type.equalsIgnoreCase("null") || type.equals("-")) {
+            return null;
+        }
+        for (HouseType ht : values()) { 
             if (ht.displayName.equalsIgnoreCase(type)) {
                 return ht;
             }

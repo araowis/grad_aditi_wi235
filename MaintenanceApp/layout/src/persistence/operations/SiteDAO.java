@@ -63,7 +63,7 @@ public class SiteDAO implements SiteRepository {
     public void updateOwnedSite(OwnedSite site) {
         String sql = """
                 UPDATE SITE
-                SET ownership_status = ?, owner_id = ?, house_type = ?
+                SET ownership_status = ?, owner_id = ?, house_type = ?, maintenance_paid = false
                 WHERE site_number = ?""";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setBoolean(1, toBoolean(site.getOccupancyStatus()));
@@ -79,21 +79,9 @@ public class SiteDAO implements SiteRepository {
         }
     }
 
-    // @Override
-    // public void updateOwnershipStatus(int siteId, OccupancyStatus status) {
-    //     String sql = "UPDATE SITE SET ownership_status=? WHERE site_number=?";
-    //     try (PreparedStatement ps = conn.prepareStatement(sql)) {
-    //         ps.setBoolean(1, toBoolean(status));
-    //         ps.setInt(2, siteId);
-    //         ps.executeUpdate();
-    //     } catch (SQLException e) {
-    //         e.printStackTrace();
-    //     }
-    // }
-
     @Override
     public void assignOwnerToSite(int siteId, int ownerId, OccupancyStatus status, HouseType houseType) {
-        String sql = "UPDATE SITE SET owner_id = ?, ownership_status=?, house_type = ? WHERE site_number=?";
+        String sql = "UPDATE SITE SET owner_id = ?, ownership_status=?, house_type = ?, maintenance_paid = false WHERE site_number=?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, ownerId);
             ps.setBoolean(2, toBoolean(status));
@@ -139,6 +127,7 @@ public class SiteDAO implements SiteRepository {
             boolean ownershipStatus = rs.getBoolean("ownership_status");
             Integer ownerId = rs.getObject("owner_id", Integer.class);
             String houseTypeStr = rs.getString("house_type");
+            boolean maintenancePaid = rs.getBoolean("maintenance_paid");
 
             OccupancyStatus status = toStatus(ownershipStatus);
 
@@ -154,6 +143,7 @@ public class SiteDAO implements SiteRepository {
             }
 
             site.setId(siteId);
+            site.setMaintenancePaid(maintenancePaid);
             return site;
 
         } catch (SQLException e) {
@@ -174,6 +164,7 @@ public class SiteDAO implements SiteRepository {
                     rs.getBoolean("ownership_status"));
                 site.setId(rs.getInt("site_number"));
                 site.setHouseType(HouseType.fromString(rs.getString("house_type")));
+                site.setMaintenancePaid(rs.getBoolean("maintenance_paid"));
                 sites.add(site);
             }
         } catch (SQLException e) {
@@ -186,8 +177,8 @@ public class SiteDAO implements SiteRepository {
     public boolean isMaintenancePaid(int siteId) {
         String sql = """
                 SELECT maintenance_paid
-                FROM OWNER_USER
-                WHERE owner_id = (SELECT owner_id FROM SITE WHERE site_number=?)""";
+                FROM SITE
+                WHERE site_number = ?""";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, siteId);
             ResultSet rs = ps.executeQuery();
