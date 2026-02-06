@@ -171,7 +171,7 @@ public class OwnerDAO implements OwnerRepository {
             ps.setInt(1, ownerId);
             ResultSet rs = ps.executeQuery();
 
-            if (rs.next()) {
+            while (rs.next()) {
                 OwnedSite site = siteFactory.createTemporaryOwnedSite(rs.getInt("length_in_feet"), rs.getInt("breadth_in_feet"), ownerId, rs.getBoolean("ownership_status"));
                 site.setId(rs.getInt("site_number"));
                 site.setHouseType(HouseType.fromString(rs.getString("house_type")));

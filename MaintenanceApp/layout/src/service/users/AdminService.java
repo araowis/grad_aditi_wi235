@@ -5,6 +5,7 @@ import factory.LoginFactory;
 import service.auth.LoginHandler;
 import utils.PasswordHashing;
 import persistence.*;
+import persistence.dto.MaintenanceRecord;
 import model.site.OwnedSite;
 import model.site.Site;
 import model.site.occupancy.OccupancyStatus;
@@ -13,6 +14,7 @@ import model.user.Owner;
 
 import java.sql.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 import utils.DateInput;
@@ -291,11 +293,49 @@ public class AdminService implements Service {
     }
 
     private void approveMaintenance(Scanner sc) {
-        System.out.print("Site ID: ");
-        int siteId = Integer.parseInt(sc.nextLine());
 
+        List<MaintenanceRecord> requests = maintenanceRepo.getMaintenancePaymentRequestList();
+
+        if (requests.isEmpty()) {
+            System.out.println("No pending maintenance payment requests.");
+            return;
+        }
+        System.out.println("\n----- Pending Maintenance Payment Requests -----");
+        requests.forEach(req -> {
+            System.out.println( "Site ID: " + req.siteId() + " | Month: " + req.month() + " | Amount: INR " + req.amount());
+        });
+
+        System.out.print("\nEnter Site ID to approve payment (or 0 to cancel): ");
+        int siteId = Integer.parseInt(sc.nextLine());
+        if (siteId == 0) {
+            System.out.println("Approval cancelled.");
+            return;
+        }
+
+        // optional because siteId is unique in payment requests, so we expect either 1 or 0 matches
+        Optional<MaintenanceRecord> match = requests.stream()
+                .filter(r -> r.siteId() == siteId)
+                .findFirst();
+
+        if (match.isEmpty()) {
+            System.out.println("Invalid Site ID. No pending request found.");
+            return;
+        }
+
+        MaintenanceRecord record = match.get();
+
+        System.out.println("\nApproving maintenance payment:");
+        System.out.println("Site ID  : " + record.siteId());
+        System.out.println("Month    : " + record.month());
+        System.out.println("Amount   : INR " + record.amount());
+
+        System.out.print("Confirm approval (y/n): ");
+        if (!sc.nextLine().equalsIgnoreCase("y")) {
+            System.out.println("Approval aborted.");
+            return;
+        }
         maintenanceRepo.approveMaintenancePayment(siteId);
-        System.out.println("Maintenance payment approved");
+        System.out.println("Maintenance payment approved successfully");
     }
 
     private void viewPendingMaintenance() {
@@ -304,7 +344,7 @@ public class AdminService implements Service {
             System.out.println("No pending maintenance");
             return;
         }
-        pending.forEach(System.out::println); 
+        pending.forEach(System.out::println);
     }
 
     private void viewAllSites() {
@@ -314,8 +354,10 @@ public class AdminService implements Service {
             return;
         }
         String fmt = "%-8s %-8s %-9s %-8s %-10s %-8s %-12s %-18s %-15s%n";
-        System.out.printf(fmt, "SiteID", "Length", "Breadth", "Area", "Ownership", "OwnerID", "Occupancy", "HouseType", "MaintPaid");
-        System.out.println("---------------------------------------------------------------------------------------------");
+        System.out.printf(fmt, "SiteID", "Length", "Breadth", "Area", "Ownership", "OwnerID", "Occupancy", "HouseType",
+                "MaintPaid");
+        System.out.println(
+                "---------------------------------------------------------------------------------------------");
 
         for (Site s : sites) {
             String ownership = "OPEN";
@@ -333,7 +375,8 @@ public class AdminService implements Service {
                 maintPaid = String.valueOf(os.isMaintenancePaid());
             }
 
-            System.out.printf(fmt, s.getId(), s.getLengthInFeet() + "ft", s.getBreadthInFeet() + "ft", s.area() + "sqft",
+            System.out.printf(fmt, s.getId(), s.getLengthInFeet() + "ft", s.getBreadthInFeet() + "ft",
+                    s.area() + "sqft",
                     ownership,
                     ownerId,
                     occupancy,

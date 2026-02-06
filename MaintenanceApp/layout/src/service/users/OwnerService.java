@@ -188,14 +188,15 @@ public class OwnerService implements Service {
 
     private void payMaintenance(Scanner sc) {
         List<OwnedSite> ownedSites = ownerRepo.getOwnedSiteByOwnerId(loggedInOwnerId);
+        if (ownedSites == null) {
+            System.out.println("No site assigned to you");
+            return;
+        }
         ownedSites.forEach((site) -> {
-            if (site == null) {
-                System.out.println("No site assigned to you");
-                return;
-            }
+            System.out.println("----- Pay Maintenance for Site ID: " + site.getId() + " -----");
 
             if (site.isMaintenancePaid()) {
-                System.out.println("No pending maintenance for your site");
+                System.out.println("No pending maintenance for this site");
                 return;
             }
 
@@ -214,6 +215,7 @@ public class OwnerService implements Service {
 
             maintenanceRepo.payMaintenance(site.getId(), amount, paymentDate);
             System.out.println("Payment submitted. Awaiting admin approval");
+            System.out.println("If you do not wish to pay the maintenance for the next site, please press n in the next prompt.");
         });
     }
 }

@@ -133,13 +133,18 @@ public class MaintenanceDAO implements MaintenanceRepository {
         String updateSite = """
         UPDATE SITE
         SET maintenance_paid = true
-        WHERE owner_id = ?
+        WHERE site_number = ?
+        """;
+
+        String removeRequest = """
+        DELETE FROM MAINTENANCE_PAYMENT_REQUEST
+        WHERE site_number = ?
         """;
 
         try {
             conn.setAutoCommit(false);
 
-            try (PreparedStatement psMaint = conn.prepareStatement(updateMaintenance); PreparedStatement psOwner = conn.prepareStatement(updateSite)) {
+            try (PreparedStatement psMaint = conn.prepareStatement(updateMaintenance); PreparedStatement psOwner = conn.prepareStatement(updateSite); PreparedStatement psRemove = conn.prepareStatement(removeRequest)) {
 
                 psMaint.setDate(1, Date.valueOf(LocalDate.now()));
                 psMaint.setInt(2, siteId);
@@ -148,6 +153,9 @@ public class MaintenanceDAO implements MaintenanceRepository {
 
                 psOwner.setInt(1, siteId);
                 psOwner.executeUpdate();
+
+                psRemove.setInt(1, siteId);
+                psRemove.executeUpdate();
 
                 conn.commit();
             }
