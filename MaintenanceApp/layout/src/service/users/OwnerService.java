@@ -14,9 +14,8 @@ import model.site.OwnedSite;
 import model.site.occupancy.OccupancyStatus;
 import model.site.type.HouseType;
 import model.user.Owner;
-
-import persistence.OwnerRepository;
-import persistence.MaintenanceRepository;
+import persistence.repositories.MaintenanceRepository;
+import persistence.repositories.OwnerRepository;
 
 public class OwnerService implements Service {
 

@@ -3,6 +3,10 @@ package factory;
 import service.*;
 import service.users.*;
 import persistence.*;
+import persistence.repositories.AdminRepository;
+import persistence.repositories.MaintenanceRepository;
+import persistence.repositories.OwnerRepository;
+import persistence.repositories.SiteRepository;
 import context.*;
 
 public class ServiceFactory {

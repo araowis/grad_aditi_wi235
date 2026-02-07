@@ -1,9 +1,10 @@
-package persistence.operations;
+package persistence.postgres;
 
 import model.site.*;
 import model.site.occupancy.OccupancyStatus;
 import model.site.type.HouseType;
-import persistence.SiteRepository;
+import persistence.repositories.SiteRepository;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

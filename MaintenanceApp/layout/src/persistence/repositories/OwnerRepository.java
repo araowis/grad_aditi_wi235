@@ -1,4 +1,4 @@
-package persistence;
+package persistence.repositories;
 
 import model.site.*;
 import model.user.*;

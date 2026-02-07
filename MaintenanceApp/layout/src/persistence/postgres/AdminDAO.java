@@ -1,8 +1,8 @@
-package persistence.operations;
-
-import persistence.AdminRepository;
+package persistence.postgres;
 
 import java.sql.*;
+
+import persistence.repositories.AdminRepository;
 
 public class AdminDAO implements AdminRepository {
 

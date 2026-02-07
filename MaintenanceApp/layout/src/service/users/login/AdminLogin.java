@@ -1,7 +1,7 @@
 package service.users.login;
 
 import utils.PasswordHashing;
-import persistence.UserRepository;
+import persistence.repositories.UserRepository;
 import service.auth.*;
 
 public class AdminLogin implements LoginHandler {

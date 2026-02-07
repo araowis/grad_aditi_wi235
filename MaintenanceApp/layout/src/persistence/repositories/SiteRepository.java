@@ -1,4 +1,4 @@
-package persistence;
+package persistence.repositories;
 
 import java.util.List;
 

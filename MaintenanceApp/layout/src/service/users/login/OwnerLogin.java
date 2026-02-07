@@ -1,6 +1,6 @@
 package service.users.login;
 
-import persistence.UserRepository;
+import persistence.repositories.UserRepository;
 import service.auth.LoginHandler;
 import utils.PasswordHashing;
 

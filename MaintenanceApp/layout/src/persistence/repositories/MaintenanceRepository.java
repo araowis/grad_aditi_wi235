@@ -1,4 +1,4 @@
-package persistence;
+package persistence.repositories;
 
 import java.sql.Date;
 import java.util.List;

@@ -1,8 +1,8 @@
-package persistence.operations;
+package persistence.postgres;
 
-import persistence.MaintenanceRepository;
 import model.site.occupancy.OccupancyStatus;
 import persistence.dto.MaintenanceRecord;
+import persistence.repositories.MaintenanceRepository;
 
 import java.sql.*;
 import java.sql.Date;
