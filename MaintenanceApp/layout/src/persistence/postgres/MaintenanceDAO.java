@@ -49,7 +49,10 @@ public class MaintenanceDAO implements MaintenanceRepository {
 
     private void insertMaintenance(int siteId, long amount, String month) throws SQLException {
 
-        String maintenanceSql = "INSERT INTO MAINTENANCE (site_number, maintenance_amount, maintenance_month, payment_made) VALUES (?, ?, ?, false)";
+        String maintenanceSql = """
+        INSERT INTO MAINTENANCE (site_number, maintenance_amount, maintenance_month, payment_made) VALUES (?, ?, ?, false)
+        ON CONFLICT (site_number, maintenance_month) DO NOTHING
+        """;
         String siteSql = "UPDATE SITE SET maintenance_paid = false WHERE site_number = ?";
 
         try (PreparedStatement ps = conn.prepareStatement(maintenanceSql)) {
