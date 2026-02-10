@@ -2,6 +2,7 @@
 // we do not have to worry about the lifecycle of the threads, 
 // we just have to submit tasks to the executor service and it will take care of the rest
 
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,7 +86,6 @@ class Race implements Runnable {
     private CyclicBarrier startBarrier;
     private ExecutorService racerExecutor;
     private ExecutorService displayExecutor;
-    public boolean startRace = false;
 
     public Race() {
         this.racers = new RaceBike[100];
