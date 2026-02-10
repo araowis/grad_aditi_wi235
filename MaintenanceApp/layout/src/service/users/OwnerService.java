@@ -191,12 +191,12 @@ public class OwnerService implements Service {
             System.out.println("No site assigned to you");
             return;
         }
-        ownedSites.forEach((site) -> {
+        for (OwnedSite site : ownedSites) {
             System.out.println("----- Pay Maintenance for Site ID: " + site.getId() + " -----");
 
             if (site.isMaintenancePaid()) {
                 System.out.println("No pending maintenance for this site");
-                return;
+                continue;
             }
 
             int amount = site.calculateMaintenanceAmount();
@@ -209,12 +209,12 @@ public class OwnerService implements Service {
             System.out.print("Confirm payment (y/n): ");
             if (!sc.nextLine().equalsIgnoreCase("y")) {
                 System.out.println("Payment cancelled");
-                return;
+                continue;
             }
 
             maintenanceRepo.payMaintenance(site.getId(), amount, paymentDate);
             System.out.println("Payment submitted. Awaiting admin approval");
             System.out.println("If you do not wish to pay the maintenance for the next site, please press n in the next prompt.");
-        });
+        }
     }
 }

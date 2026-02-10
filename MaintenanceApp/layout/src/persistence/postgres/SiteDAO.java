@@ -157,17 +157,7 @@ public class SiteDAO implements SiteRepository {
         String sql = "SELECT * FROM SITE";
         List<Site> sites = new ArrayList<>();
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql);) {
-            while(rs.next()) {
-                OwnedSite site = siteFactory.createTemporaryOwnedSite(
-                    rs.getInt("length_in_feet"), 
-                    rs.getInt("breadth_in_feet"), 
-                    rs.getInt("owner_id"), 
-                    rs.getBoolean("ownership_status"));
-                site.setId(rs.getInt("site_number"));
-                site.setHouseType(HouseType.fromString(rs.getString("house_type")));
-                site.setMaintenancePaid(rs.getBoolean("maintenance_paid"));
-                sites.add(site);
-            }
+            sites = mapSites(rs);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -217,6 +207,22 @@ public class SiteDAO implements SiteRepository {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private List<Site> mapSites(ResultSet rs) throws SQLException {
+        List<Site> sites = new ArrayList<>();
+        while (rs.next()) {
+            OwnedSite site = siteFactory.createTemporaryOwnedSite(
+                    rs.getInt("length_in_feet"),
+                    rs.getInt("breadth_in_feet"),
+                    rs.getInt("owner_id"),
+                    rs.getBoolean("ownership_status"));
+            site.setId(rs.getInt("site_number"));
+            site.setHouseType(HouseType.fromString(rs.getString("house_type")));
+            site.setMaintenancePaid(rs.getBoolean("maintenance_paid"));
+            sites.add(site);
+        }
+        return sites;
     }
 
     private OccupancyStatus toStatus(boolean ownershipStatus) {

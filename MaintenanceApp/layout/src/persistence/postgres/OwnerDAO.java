@@ -81,10 +81,10 @@ public class OwnerDAO implements OwnerRepository {
     public Owner getOwnerById(int ownerId) {
 
         String sql = """
-        SELECT o.owner_id, u.user_id, u.user_name, o.maintenance_paid
-        FROM OWNER_USER o
-        JOIN USERS u ON o.user_id = u.user_id
-        WHERE o.owner_id = ?""";
+                SELECT o.owner_id, u.user_id, u.user_name, o.maintenance_paid
+                FROM OWNER_USER o
+                JOIN USERS u ON o.user_id = u.user_id
+                WHERE o.owner_id = ?""";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, ownerId);
@@ -102,12 +102,11 @@ public class OwnerDAO implements OwnerRepository {
     @Override
     public Owner getOwnerByUsername(String username) {
 
-        String sql = 
-        """
-        SELECT o.owner_id, u.user_id, u.user_name, o.maintenance_paid
-        FROM OWNER_USER o
-        JOIN USERS u ON o.user_id = u.user_id
-        WHERE u.user_name = ?""";
+        String sql = """
+                SELECT o.owner_id, u.user_id, u.user_name, o.maintenance_paid
+                FROM OWNER_USER o
+                JOIN USERS u ON o.user_id = u.user_id
+                WHERE u.user_name = ?""";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -148,9 +147,9 @@ public class OwnerDAO implements OwnerRepository {
     public void updatePassword(String username, String newHash) {
 
         String sql = """
-        UPDATE OWNER_USER
-        SET password_string=?
-        WHERE user_id = (SELECT user_id FROM USERS WHERE user_name=?)""";
+                UPDATE OWNER_USER
+                SET password_string=?
+                WHERE user_id = (SELECT user_id FROM USERS WHERE user_name=?)""";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newHash);
@@ -172,9 +171,11 @@ public class OwnerDAO implements OwnerRepository {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                OwnedSite site = siteFactory.createTemporaryOwnedSite(rs.getInt("length_in_feet"), rs.getInt("breadth_in_feet"), ownerId, rs.getBoolean("ownership_status"));
+                OwnedSite site = siteFactory.createTemporaryOwnedSite(rs.getInt("length_in_feet"),
+                        rs.getInt("breadth_in_feet"), ownerId, rs.getBoolean("ownership_status"));
                 site.setId(rs.getInt("site_number"));
                 site.setHouseType(HouseType.fromString(rs.getString("house_type")));
+                site.setMaintenancePaid(rs.getBoolean("maintenance_paid"));
                 ownedSites.add(site);
             }
             return ownedSites;
@@ -188,9 +189,9 @@ public class OwnerDAO implements OwnerRepository {
     public void requestSiteUpdate(Site site) {
 
         String sql = """
-        UPDATE SITE
-        SET length_in_feet=?, breadth_in_feet=? 
-        WHERE site_number=?""";
+                UPDATE SITE
+                SET length_in_feet=?, breadth_in_feet=?
+                WHERE site_number=?""";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, site.getLengthInFeet());
@@ -214,6 +215,16 @@ public class OwnerDAO implements OwnerRepository {
             e.printStackTrace();
         }
         return owners;
+    }
+
+    private void refreshOwnerMaintenance(int ownerId) {
+        String sql = "SELECT refresh_owner_maintenance(?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, ownerId);
+            ps.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private Owner mapOwner(ResultSet rs) throws SQLException {
