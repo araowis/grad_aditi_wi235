@@ -1,3 +1,6 @@
+// executor service allows us to reuse threads and not init our own threads
+// we do not have to worry about the lifecycle of the threads, 
+// we just have to submit tasks to the executor service and it will take care of the rest
 
 import java.util.*;
 import java.util.concurrent.*;
