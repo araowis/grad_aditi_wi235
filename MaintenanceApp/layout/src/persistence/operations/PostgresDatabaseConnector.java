@@ -6,7 +6,7 @@ public class PostgresDatabaseConnector {
     public static Connection createConnection() {
       Connection conn = null;
       try {
-            conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/Fontaine", "postgres", "hydroarchon");
+            conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/Fontaine", "postgres", "postgres");
       } 
       catch (SQLException ex) {
             ex.printStackTrace();
