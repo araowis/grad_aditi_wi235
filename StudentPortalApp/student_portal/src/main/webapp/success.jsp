@@ -3,10 +3,10 @@
 <html>
 <head>
     <meta charset="ISO-8859-1">
-    <title>Student Details Inserted</title>
+    <title>Student Details</title>
 </head>
 <body>
-    <h1>Student Details Inserted Successfully!</h1>
+    <h1>Operation Successful!</h1>
 
     <table border="1">
         <tr>
