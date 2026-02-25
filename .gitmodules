@@ -1,0 +1,3 @@
+[submodule "JenkinsAssignment"]
+	path = JenkinsAssignment
+	url = https://github.com/araowis/calculator_test.git
