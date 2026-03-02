@@ -1,0 +1,55 @@
+body {
+  font-family: 'Times New Roman', Times, serif, sans-serif;
+  background-color: whitesmoke;
+}
+
+.container {
+  width: 400px;
+  margin: 50px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.input-error {
+  border: 2px solid red;
+  background-color: grey;
+}
+
+h2 {
+  text-align: center;
+}
+
+label {
+  font-weight: bold;
+}
+
+input, select, button {
+  width: 100%;
+  padding: 2px;
+  margin: 8px 0 15px 0;
+}
+
+button {
+  background-color: blue;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: darkblue;
+}
+
+#emi {
+  background-color: white;
+}
+
+#totalPayable {
+  background-color: white;
+}
+
+.error {
+  color: red;
+  font-size: 14px;
+}
