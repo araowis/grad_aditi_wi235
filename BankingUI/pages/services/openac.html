@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Open Account</title>
+    <link rel="stylesheet" href="../../styles/pages.css">
+</head>
+<body>
+
+<div class="service-box">
+    <h2>Open New Account</h2>
+
+    <form id="openAccountForm">
+
+        <input type="text" id="fullName"
+               placeholder="Full Name"
+               pattern="[A-Za-z ]{3,50}"
+               title="Only letters and spaces (3-50 characters)"
+               required>
+
+        <label>Date of Birth</label>
+        <input type="date" id="dob" required>
+
+        <select id="gender" required>
+            <option value="">Select Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+        </select>
+
+        <input type="tel" id="phone"
+               placeholder="Phone Number"
+               pattern="[0-9]{10}"
+               title="Enter a valid 10-digit phone number"
+               required>
+
+        <input type="email" id="email"
+               placeholder="Email Address"
+               required>
+
+        <textarea id="address"
+                  placeholder="Residential Address (Min 10 characters)"
+                  minlength="10"
+                  maxlength="200"
+                  required></textarea>
+
+        <select id="accountType" required>
+            <option value="">Select Account Type</option>
+            <option value="Savings">Savings</option>
+            <option value="Current">Current</option>
+        </select>
+
+        <input type="number" id="initialDeposit"
+               placeholder="Initial Deposit Amount"
+               min="1000"
+               max="10000000"
+               required>
+
+        <select id="idProofType" required>
+            <option value="">Select ID Proof</option>
+            <option>Aadhar</option>
+            <option>PAN</option>
+            <option>Passport</option>
+            <option>Driving License</option>
+        </select>
+
+        <input type="text" id="idNumber"
+               placeholder="ID Proof Number"
+               minlength="6"
+               maxlength="20"
+               required>
+
+        <button type="submit">Submit Application</button>
+    </form>
+
+    <p id="result"></p>
+</div>
+
+<script src="../../js/services.js">document.getElementById("openAccountForm").addEventListener("submit", openAccount());</script>
+
+</body>
+</html>

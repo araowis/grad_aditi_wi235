@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ABank - Home</title>
+    <link rel="stylesheet" href="styles/globals.css">
+    <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+
+<div class="hamburger" onclick="toggleMenu()">=</div>
+
+<div id="sideMenu" class="side-menu">
+    <a href="index.html">Home</a>
+    <a href="pages/about.html">About Us</a>
+
+    <div class="dropdown">
+        <button class="dropbtn">Services</button>
+        <div class="dropdown-content">
+            <a href="pages/services/loan.html">Loan</a>
+            <a href="pages/services/deposit.html">Deposit</a>
+            <a href="pages/services/openac.html">Account Opening</a>
+            <a href="pages/services/closeac.html">Account Closing</a>
+        </div>
+    </div>
+
+    <a href="pages/netbanking.html">Netbanking</a>
+    <a href="pages/contact.html">Contact Us</a>
+</div>
+
+<section class="hero">
+    <h1>Welcome to ABank</h1>
+    <p>Your trusted financial partner for secure banking solutions.</p>
+    <a href="pages/netbanking.html" class="primary-btn">Login to Netbanking</a>
+</section>
+
+<script src="js/menu.js"></script>
+</body>
+</html>
