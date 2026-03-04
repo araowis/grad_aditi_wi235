@@ -14,6 +14,10 @@ body {
     z-index: -1;
 }
 
+#trust-heading {
+    color: cornflowerblue;
+}
+
 #sidebar {
     min-width: 200px;
     max-width: 200px;

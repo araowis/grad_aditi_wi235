@@ -35,7 +35,7 @@
     <div class="container-fluid content" id="main-content">
       <section id="home" class="d-none">
         <h2 class="mb-4">Welcome to ABank</h2>
-        <p class="mb-4">Your trusted partner in financial services.</p>
+        <p class="mb-4" id="trust-heading">Your trusted partner in financial services.</p>
 
         <div class="home-image mb-4">
           <img
@@ -64,9 +64,100 @@
         </ul>
       </section>
 
-      <section id="netbanking" class="d-none">
+      <!-- <section id="netbanking" class="d-none">
         <h2>Netbanking</h2>
         <p>Access your account online with our secure netbanking platform.</p>
+      </section> -->
+
+      <section id="netbanking" class="d-none">
+        <h2 class="mb-4">Netbanking Services</h2>
+
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card p-4 h-100">
+              <h4 class="mb-3 text-primary">Open New Account</h4>
+              <form id="open-account-form">
+                <div class="mb-3">
+                  <label class="form-label">Full Name</label>
+                  <input type="text" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Account Type</label>
+                  <select class="form-select" required>
+                    <option value="">Select</option>
+                    <option>Savings</option>
+                    <option>Current</option>
+                    <option>Business</option>
+                  </select>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Initial Deposit (INR)</label>
+                  <input type="number" class="form-control" required />
+                </div>
+
+                <button type="submit" class="btn btn-success w-100">
+                  Open Account
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card p-4 h-100">
+              <h4 class="mb-3 text-danger">Close Account</h4>
+              <form id="close-account-form">
+                <div class="mb-3">
+                  <label class="form-label">Account Number</label>
+                  <input type="text" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Reason for Closing</label>
+                  <textarea class="form-control" rows="3" required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-danger w-100">
+                  Close Account
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card p-4">
+              <h4 class="mb-3 text-warning">Apply for Loan</h4>
+              <form id="loan-form">
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Loan Type</label>
+                    <select class="form-select" required>
+                      <option value="">Select</option>
+                      <option>Home Loan</option>
+                      <option>Personal Loan</option>
+                      <option>Car Loan</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Amount ($)</label>
+                    <input type="number" class="form-control" required />
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">Annual Income ($)</label>
+                    <input type="number" class="form-control" required />
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100">
+                  Apply for Loan
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section id="contact" class="d-none">
