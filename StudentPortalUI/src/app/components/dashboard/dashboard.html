@@ -1,0 +1,14 @@
+<app-navbar></app-navbar>
+
+<div class="p-6 bg-gray-100 min-h-screen">
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+<app-student-form #studentForm *ngIf="auth.isAdmin()"></app-student-form>
+
+<app-student-list
+[form]="studentForm"> </app-student-list>
+
+</div>
+
+</div>
