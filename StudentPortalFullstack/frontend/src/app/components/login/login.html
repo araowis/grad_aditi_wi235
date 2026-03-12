@@ -1,0 +1,27 @@
+<div class="flex items-center justify-center min-h-screen bg-gray-100">
+
+<div class="bg-white p-8 rounded-xl shadow-lg w-80">
+
+<h2 class="text-2xl font-semibold mb-6 text-center text-gray-700">
+Login
+</h2>
+
+<input
+class="border border-gray-300 p-2 w-full mb-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+placeholder="Username"
+[(ngModel)]="username">
+
+<input
+type="password"
+class="border border-gray-300 p-2 w-full mb-6 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+placeholder="Password"
+[(ngModel)]="password">
+
+<button
+class="bg-blue-600 hover:bg-blue-700 transition text-white px-4 py-2 w-full rounded-md font-medium"
+(click)="login()">
+Login </button>
+
+</div>
+
+</div>

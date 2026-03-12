@@ -1,0 +1,35 @@
+<app-navbar></app-navbar>
+
+<div class="p-6 bg-gray-100 min-h-screen space-y-6">
+
+   <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+    <app-stats type="strength"></app-stats>
+    <app-stats type="standardCount"></app-stats>
+    <app-stats type="result"></app-stats>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <app-student-form
+      *ngIf="auth.isAdmin()"
+      [studentToEdit]="selectedStudent"
+      (refresh)="triggerReload()"
+      class="lg:col-span-1 h-full">
+    </app-student-form>
+
+    <app-student-list
+      [reload]="reloadList"
+      (edit)="selectedStudent = $event"
+      [class.lg:col-span-2]="auth.isAdmin()"
+      [class.lg:col-span-3]="!auth.isAdmin()"
+      class="h-full flex flex-col">
+    </app-student-list>
+
+  </div>
+
+  <!-- <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <app-query-panel (result)="queryResult = $event"></app-query-panel>
+    <app-analytics-panel [data]="queryResult"></app-analytics-panel>
+  </div> -->
+
+</div>
